@@ -22,6 +22,8 @@ setwd("G:/My Drive/Documents/research/PCN/fire/pcn_fire_synthesis/")
 f <- list.files(path = "pcn_fire_synthesis_data/csv/",
                 pattern = ".csv", full.names = TRUE)
 
+# vector of what the columns classes should be
+c()
 # read first file to set up data frame
 d <- read.csv(f[1], header = TRUE)
 
@@ -29,6 +31,6 @@ d <- read.csv(f[1], header = TRUE)
 for(i in 2:length(f))
 {
   x <- read.csv(f[i], header = TRUE)
-  d <- rbind(d,x)
+  d <- merge(d,x)
 }
 
