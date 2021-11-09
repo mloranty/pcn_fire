@@ -7,6 +7,9 @@
 ####################################
 
 ### organize work space----
+library(sf)
+library(ggplot2)
+
 # clear environment
 rm(list=ls())
 
@@ -20,7 +23,7 @@ setwd("G:/My Drive/Documents/research/PCN/fire/pcn_fire_synthesis/")
 
 # vector of data files
 f <- list.files(path = "pcn_fire_synthesis_data/csv/",
-                pattern = ".csv", full.names = TRUE)
+                pattern = ".csv", full.names = TRUE)[-14]
 
 
 #### CLEAN UP AND CONCATENATE INDIVIDUAL FILES ----
@@ -148,8 +151,11 @@ f13$organic_depth <- as.numeric(f13$organic_depth)
 # convert thaw depth to numeric - blank cells have a period, and will be converted to NA
 f13$thaw_depth <- as.numeric(f13$thaw_depth)
 
+## Veraverbeke
+f14 <- read.csv(f[14], header = TRUE)
+
 #### concatenate and clean up all of the raw data -----
-all.td <- rbind(f1,f3,f4,f5,f6,f7[,-23],f8[,-23],f9, f10, f11, f12[,-23], f13[,-23])
+all.td <- rbind(f1,f3,f4,f5,f6,f7[,-23],f8[,-23],f9, f10, f11, f12[,-23], f13[,-23],f14)
 
 ### fix inconsistent spelling/capitalization for burned/unburned
 all.td$burn_unburn[grep("unb", all.td$burn_unburn, ignore.case = TRUE)] <- "unburned"
@@ -159,8 +165,9 @@ all.td$burn_unburn[grep("unb", all.td$burn_unburn, ignore.case = TRUE, invert = 
 all.td$boreal_tundra <- sub("B", "boreal", all.td$boreal_tundra)
 all.td$boreal_tundra <- sub("T", "tundra", all.td$boreal_tundra)
 
-# convert day to numeric
+# convert day  & long to numeric
 all.td$day <- as.numeric(all.td$day)
+all.td$long <- as.numeric(all.td$long)
 
 # calculate time since fire
 all.td$tsf <- all.td$year-all.td$fire_year
@@ -180,11 +187,22 @@ f2$thaw_active <- read.csv(f[2], header = TRUE, colClasses = "character")[,24]
 
 ### AGU Analyses ----
 #------------------------------------------------------------------------------------------#
-## calculate number of TD measurements for AGU abstract
-nrow(f1)+nrow(f2)+nrow(f3)+nrow(f4)+nrow(f5)+nrow(f6)+nrow(f7)+nrow(f8)+nrow(f9)+nrow(f10)+nrow(f11)+nrow(f12)+nrow(f13)
+# remove all rows without coords
+all.td2 <- all.td[-which(is.na(all.td$long)),]
 
 aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn, all.td, FUN = mean)
 aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn+thaw_active, all.td, FUN = mean)
 
 site.td <- aggregate(cbind(thaw_depth,tsf)~last_name+site_id+year+month+burn_unburn,all.td, FUN=mean)
+
+t.sf <- st_as_sf(x = all.td2, coords = c("long", "lat"), crs = 4326)
+                
+ggplot() +
+  geom_map(
+    data = world, map = world,
+    aes(long, lat, map_id = region),
+    color = "black", fill = "lightgray", size = 0.1
+  ) +
+  geom_sf(data = t.sf, col = "red")
+
 
