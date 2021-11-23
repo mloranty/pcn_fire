@@ -34,6 +34,9 @@ f1 <- read.csv(f[1], header = TRUE)
 # change organic depth range to numeric
 f1$organic_depth <- 25
 
+# indicate measurements that exceed probe length
+f1$gt_probe[which(f1$thaw_depth == "100+")] <- "y"
+
 # get rid of non-numeric thaw probe measurements
 f1$thaw_depth <- as.numeric(sub("100+", "100", f1$thaw_depth, fixed = TRUE))
 
@@ -44,7 +47,7 @@ f1$fire_year <- as.numeric(sub("unburned", NA, f1$fire_year, fixed = TRUE))
 f1$slope <- read.csv(f[1], header = TRUE, colClasses = "character")[,20]
 
 # fix thaw_active - these are TD measurements, not ALD
-f1$thaw_active <- "A"
+f1$thaw_active <- "T"
 ##############
 ## Buma
 # read without 17th column, which is redundant to the gt_prob column
@@ -193,7 +196,12 @@ all.td2 <- all.td[-which(is.na(all.td$long)),]
 aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn, all.td, FUN = mean)
 aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn+thaw_active, all.td, FUN = mean)
 
-site.td <- aggregate(cbind(thaw_depth,tsf)~last_name+site_id+year+month+burn_unburn,all.td, FUN=mean)
+site.td <- aggregate(cbind(thaw_depth,tsf)~last_name+site_id+year+month+burn_unburn+,all.td, FUN=mean)
+
+
+
+
+
 
 t.sf <- st_as_sf(x = all.td2, coords = c("long", "lat"), crs = 4326)
                 
