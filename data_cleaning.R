@@ -15,9 +15,12 @@ rm(list=ls())
 
 # load packages
 
-# set working directory
-setwd("G:/My Drive/Documents/research/PCN/fire/pcn_fire_synthesis/")
+# set working directory specific to computer
+pc <- "G:/My Drive/Documents/research/PCN/fire/pcn_fire_synthesis/"
+mac <- "/Volumes/GoogleDrive/My Drive/Documents/research/PCN/fire/pcn_fire_synthesis/"
 
+ifelse(Sys.info()['sysname']=="Darwin",
+       setwd(mac),setwd(pc)) 
 
 ### read and preprocess data----
 
