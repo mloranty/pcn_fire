@@ -11,6 +11,7 @@
 library(sf)
 library(ggplot2)
 library(dplyr)
+library(tidyverse)
 
 # clear environment
 rm(list=ls())
@@ -30,12 +31,19 @@ rm(mac,pc)
 f <- list.files(path = "pcn_fire_synthesis_data/csv/",
                 pattern = ".csv", full.names = TRUE)[-14]
 
-# define functions
+## define functions
 
+# get the mode of a vector (works for character)
 getmode <- function(x){
   uv <- unique(x)
   uv[which.max(tabulate(match(x, uv)))]
 }
+
+# calculate standard error of the mean
+se <- function(x){
+  sd(x, na.rm = T)/sqrt(length(na.omit(x)))
+}
+
 #### CLEAN UP AND CONCATENATE INDIVIDUAL FILES ----
 ##############
 ## Baillargeon
@@ -59,9 +67,19 @@ f1$slope <- read.csv(f[1], header = TRUE, colClasses = "character")[,20]
 # fix thaw_active - these are TD measurements, not ALD
 f1$thaw_active <- "T"
 
+# examine unique combinations of identify information for aggregatation
 f1 %>% distinct(site_id,year,month,day,fire_id,burn_unburn)
 
-f1 %>% group_by(site_id,burn_unburn,year)
+f1a <- f1 %>% group_by(site_id,fire_id,burn_unburn,year) %>%
+              summarise(td = mean(thaw_depth, na.rm = T),se = se(thaw_depth), 
+                        fire_year = mean(fire_year),
+                        lat = mean(lat), long = mean(long),
+                        biome = getmode(boreal_tundra),veg = getmode(veg_cover_class), 
+                        thaw_active = getmode(thaw_active))
+
+pivot_wider(f1a,
+            names_from = c(burn_unburn),
+            values_from = c(td,se))
 ##############
 ## Buma
 # read without 17th column, which is redundant to the gt_prob column
