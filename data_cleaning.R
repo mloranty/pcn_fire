@@ -12,6 +12,10 @@ library(sf)
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
+library(maps)
+library(mapdata)
+library(tmap)
+library(tmaptools)
 
 # clear environment
 rm(list=ls())
@@ -90,6 +94,9 @@ f3$thaw_active <- read.csv(f[3], header = TRUE, colClasses = "character")[,20]
 
 # fix site_id for aggregating (see Note below from Buma)
 f3$site_id <- paste(f3$site_id, sapply(strsplit(f3$plot,"_"),"[[",2), sep="_" )
+
+# fix positive longitude values, which are in the wrong hemisphere
+f3$long <- ifelse(f3$long > 0, -f3$long,f3$long)
 
 # The Dalton and the Steese are larger "sites," each of which has a lot of plots in them.  But those plots do vary, so don't aggregate.  At the Dalton, there are sites with 0 (unburned), 1 (one fire, which would be 2004/2005 era), 2 fires (which would be 1970's era AND 2004 or 2005), or 3 fires (which would be 1950's, 1970's, and 2004 or 2005.  So if aggregating, what you'd want to do would be to aggregate by those treatments (0, 1, 2, or 3 fires) within the Dalton or Steese "sites."  So, sounds like you'd want to aggregate all the unburned plots at the Dalton, all the 1 burn plots at the Dalton, etc.  I would not aggregate Dalton and Steese plots together, they are functionally different sites (uplands vs. low lands, respectively).
 
@@ -229,10 +236,14 @@ all.td$long <- as.numeric(all.td$long)
 all.td$tsf <- all.td$year-all.td$fire_year
 
 # set time since fire to 200 for unburned 
-all.td$tsf[which(all.td$burn_unburn=="unburned")] <- 200
+#all.td$tsf[which(all.td$burn_unburn=="unburned")] <- 200
 
 
-all.td$thaw_active[which(all.td$thaw_active=="TRUE")] <- "T"
+#all.td$thaw_active[which(all.td$thaw_active=="TRUE")] <- "T"
+
+all.td$thaw_depth[which(all.td$thaw_depth > 500)] <- NA
+
+all.td$thaw_depth[which(all.td$thaw_depth < 0)] <- NA
 ########### Files submitted pre-aggregated to the site level ----
 ## Breen 
 f2 <- read.csv(f[2], header = TRUE)
@@ -246,24 +257,47 @@ f2$thaw_active <- read.csv(f[2], header = TRUE, colClasses = "character")[,24]
 # remove all rows without coords
 all.td2 <- all.td[-which(is.na(all.td$long)),]
 
+#all.td2$boreal_tundra <- as.factor(all.td2$boreal_tundra)
+#all.td2$burn_unburn <- as.factor(all.td2$burn_unburn)
+#all.td2$thaw_active <- as.factor(all.td2$thaw_active)
+
+ggplot(all.td2, aes(x = burn_unburn, y = thaw_depth)) +
+  geom_violin(trim = T)
+
+boxplot(thaw_depth~burn_unburn+boreal_tundra, data = all.td2, range = 1)
+
+
 aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn, all.td, FUN = mean)
 aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn+thaw_active, all.td, FUN = mean)
 
-site.td <- aggregate(cbind(thaw_depth,tsf)~last_name+site_id+year+month+burn_unburn+,all.td, FUN=mean)
+site.td <- aggregate(cbind(thaw_depth,tsf,lat,long)~last_name+site_id+year+month+burn_unburn+boreal_tundra+thaw_active,all.td2, FUN=mean)
+write.csv(site.td, file = "aggregated_site_level_data_AGU.csv", col.names = T, row.names = F)
+
+plot(site.td$tsf, site.td$thaw_depth,col = as.factor(site.td$boreal_tundra),pch = site.td$thaw_active)
 
 
-
-
-
-
+# make a map of the study sites
 t.sf <- st_as_sf(x = all.td2, coords = c("long", "lat"), crs = 4326)
-                
+
+s.sf <- st_as_sf(x = site.td, coords = c("long", "lat"), crs = 4326)
+
+prj <- "+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs "
+
+World.st <- st_transform(World, prj)
+
+tm_shape(World.st, projection = prj) +
+  tm_fill() +
+  tm_borders() +
+tm_shape(s.sf)   +
+  tm_dots()
+
+
 ggplot() +
   geom_map(
     data = world, map = world,
     aes(long, lat, map_id = region),
     color = "black", fill = "lightgray", size = 0.1
   ) +
-  geom_sf(data = t.sf, col = "red")
+  geom_sf(data = s.sf, col = "red")
 
 
