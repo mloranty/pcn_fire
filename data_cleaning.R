@@ -33,7 +33,7 @@ rm(mac,pc)
 
 # vector of data files
 f <- list.files(path = "pcn_fire_synthesis_data/csv/",
-                pattern = ".csv", full.names = TRUE)[-14]
+                pattern = ".csv", full.names = TRUE)
 
 ## define functions
 
@@ -84,6 +84,12 @@ f1a <- f1 %>% group_by(site_id,fire_id,burn_unburn,year) %>%
 pivot_wider(f1a,
             names_from = c(burn_unburn),
             values_from = c(td,se))
+
+
+##############
+## Breen
+#f2 <- read.csv(f[2], header = TRUE)
+
 ##############
 ## Buma
 # read without 17th column, which is redundant to the gt_prob column
@@ -209,16 +215,20 @@ f13$organic_depth <- as.numeric(f13$organic_depth)
 f13$thaw_depth <- as.numeric(f13$thaw_depth)
 
 f13 %>% distinct(site_id,year,month,day,fire_id,burn_unburn)
+
+##Sizov
+f14 <- read.csv(f[14], header = TRUE)[,-23]
+
 ## Veraverbeke
-f14 <- read.csv(f[14], header = TRUE)
+f15 <- read.csv(f[15], header = TRUE)
 
 # fix incorrect logical columns
-f14$thaw_active <- read.csv(f[14], header = TRUE, colClasses = "character")[,19]
+f15$thaw_active <- read.csv(f[15], header = TRUE, colClasses = "character")[,19]
 
-f14 %>% distinct(plot_id,year,month,day,fire_id,burn_unburn)
+f15 %>% distinct(plot_id,year,month,day,fire_id,burn_unburn)
 
 #### concatenate and clean up all of the raw data -----
-all.td <- rbind(f1,f3,f4,f5,f6,f7[,-23],f8[,-23],f9, f10, f11, f12[,-23], f13[,-23],f14)
+all.td <- rbind(f1,f3,f4,f5,f6,f7[,-23],f8[,-23],f9, f10, f11, f12[,-23], f13[,-23],f15)
 
 ### fix inconsistent spelling/capitalization for burned/unburned
 all.td$burn_unburn[grep("unb", all.td$burn_unburn, ignore.case = TRUE)] <- "unburned"
@@ -252,28 +262,122 @@ f2 <- read.csv(f[2], header = TRUE)
 f2$thaw_active <- read.csv(f[2], header = TRUE, colClasses = "character")[,24]
 
 
-### AGU Analyses ----
+### AGU Analyses/Figures ----
 #------------------------------------------------------------------------------------------#
 # remove all rows without coords
 all.td2 <- all.td[-which(is.na(all.td$long)),]
 
-#all.td2$boreal_tundra <- as.factor(all.td2$boreal_tundra)
-#all.td2$burn_unburn <- as.factor(all.td2$burn_unburn)
-#all.td2$thaw_active <- as.factor(all.td2$thaw_active)
+# aggregate to site level, and write csv file
+site.td <- aggregate(cbind(thaw_depth,tsf,lat,long)~last_name+site_id+country_code+year+month+burn_unburn+boreal_tundra+thaw_active,all.td2, FUN=mean)
 
-ggplot(all.td2, aes(x = burn_unburn, y = thaw_depth)) +
-  geom_violin(trim = T)
-
-boxplot(thaw_depth~burn_unburn+boreal_tundra, data = all.td2, range = 1)
-
-
-aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn, all.td, FUN = mean)
-aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn+thaw_active, all.td, FUN = mean)
-
-site.td <- aggregate(cbind(thaw_depth,tsf,lat,long)~last_name+site_id+year+month+burn_unburn+boreal_tundra+thaw_active,all.td2, FUN=mean)
 write.csv(site.td, file = "aggregated_site_level_data_AGU.csv", col.names = T, row.names = F)
 
-plot(site.td$tsf, site.td$thaw_depth,col = as.factor(site.td$boreal_tundra),pch = site.td$thaw_active)
+bs.td <- site.td[which(site.td$boreal_tundra=="boreal"),]
+
+aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn, all.td2, FUN = mean)
+aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn+thaw_active, all.td2, FUN = mean)
+
+
+
+## boxplot of all data, grouped by biome and burned/unburned
+png("biome_thaw_all.png",
+    width = 8,
+    height = 8, 
+    units="in", 
+    res = 300)
+par(las = 1, cex = 1.75)
+boxplot(-thaw_depth~burn_unburn+boreal_tundra, data = all.td2, range = 1,
+        outline = T,
+        ylim = c(-200,0), 
+        xlab="",ylab = "Permafrost Table Depth (cm)",
+        col = rep(c("blue","yellow"), each=2), angle = c(90,0),
+        names = c("Boreal burned", "Boreal unburned", "Tundra burned", "Tundra unburned"))
+dev.off()
+
+## thaw probe measurements by biome, using aggregated site level data
+png("biome_thaw_site.png",
+    width = 8,
+    height = 8, 
+    units="in", 
+    res = 300)
+par(las = 1, cex = 1.75)
+boxplot(-thaw_depth~burn_unburn+boreal_tundra, data = site.td, range = 1,
+        outline = T, notch = T,
+        ylim = c(-200,0), 
+        xlab="",ylab = "Permafrost Table Depth (cm)",
+        col = rep(c("blue","yellow"), each=2), angle = c(90,0),
+        names = c("Boreal burned", "Boreal unburned", "Tundra burned", "Tundra unburned"))
+dev.off()
+
+## thaw probe measurements by region for boreal only
+png("boreal_region.png",
+    width = 8,
+    height = 6, 
+    units="in", 
+    res = 300)
+par(las = 1, cex = 1.5)
+boxplot(-thaw_depth~burn_unburn+country_code, data = bs.td, range = 1,
+        outline = T, notch = T,
+        ylim = c(-200,0), 
+        xlab="",ylab = "Permafrost Table Depth (cm)",
+        main = "Boreal Forest by Region",
+        col = "blue",
+        names = c("CA burned", "CA unburned", "RU burned", "RU unburned", "US burned", "US unburned"))
+dev.off()
+
+## plot thaw depth vs. time since fire
+png("time_since_fire.png",
+    width = 8,
+    height = 6, 
+    units="in", 
+    res = 300)
+par(las = 1, cex = 1.5)
+
+plot(site.td$tsf, -site.td$thaw_depth,
+     ylim = c(-200,0),
+     bg = ifelse(site.td$boreal_tundra =="boreal","blue","yellow"),
+     pch = ifelse(site.td$thaw_active == "A",21,24),
+     xlab = "Years Since Fire",
+     ylab = "Permafrost Table Depth (cm)",
+     main = "Post-fire Thaw Depth by Biome")
+
+legend("topright", c("ALD","TD"),
+       bty = "n",inset = 0.05,
+       pch = c(16,17))
+
+dev.off()
+
+## plot thaw depth vs. time since fire for boreal
+
+#make a vector of colors
+cl <- ifelse(bs.td$country_code=="RU","red",
+             ifelse(bs.td$country_code=="US","gray","black"))
+
+png("time_since_fire_boreal.png",
+    width = 8,
+    height = 6, 
+    units="in", 
+    res = 300)
+par(las = 1, cex = 1.5)
+
+plot(bs.td$tsf, -bs.td$thaw_depth,
+     ylim = c(-240,0),
+     bg = cl,
+     pch = ifelse(bs.td$thaw_active == "A",21,24),
+     xlab = "Years Since Fire",
+     ylab = "Permafrost Table Depth (cm)",
+     main = "Post-fire Thaw Depth by Boreal Region")
+
+legend("topright", c("ALD","TD"),
+       bty = "n",inset = 0.05,
+       pch = c(16,17))
+
+legend("bottom", c("CA","RU","US"),
+       fill = c("red","black","gray"),
+       ncol = 3,bty = "n")
+dev.off()
+
+
 
 
 # make a map of the study sites
@@ -285,10 +389,11 @@ prj <- "+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +datum=WG
 
 World.st <- st_transform(World, prj)
 
-tm_shape(World.st, projection = prj) +
+tm_shape(World) +
   tm_fill() +
   tm_borders() +
-tm_shape(s.sf)   +
+tm_shape(s.sf)   
+
   tm_dots()
 
 
