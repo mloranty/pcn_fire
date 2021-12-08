@@ -341,7 +341,29 @@ plot(site.td$tsf, -site.td$thaw_depth,
      ylab = "Permafrost Table Depth (cm)",
      main = "Post-fire Thaw Depth by Biome")
 
-legend("topright", c("ALD","TD"),
+legend("topright", c("ALT","TD"),
+       bty = "n",inset = 0.05,
+       pch = c(16,17))
+
+dev.off()
+
+## plot thaw depth vs. latitude
+png("latitudinal_thaw.png",
+    width = 8,
+    height = 6, 
+    units="in", 
+    res = 300)
+par(las = 1, cex = 1.5)
+
+plot(site.td$lat, -site.td$thaw_depth,
+     ylim = c(-200,0),
+     bg = ifelse(site.td$boreal_tundra =="boreal","blue","yellow"),
+     pch = ifelse(site.td$thaw_active == "A",21,24),
+     xlab = "Years Since Fire",
+     ylab = "Permafrost Table Depth (cm)",
+     main = "Post-fire Thaw Depth by Biome")
+
+legend("topright", c("ALT","TD"),
        bty = "n",inset = 0.05,
        pch = c(16,17))
 
@@ -368,16 +390,43 @@ plot(bs.td$tsf, -bs.td$thaw_depth,
      ylab = "Permafrost Table Depth (cm)",
      main = "Post-fire Thaw Depth by Boreal Region")
 
-legend("topright", c("ALD","TD"),
+legend("topright", c("ALT","TD"),
        bty = "n",inset = 0.05,
        pch = c(16,17))
 
 legend("bottom", c("CA","RU","US"),
-       fill = c("red","black","gray"),
+       fill = c("black","red","gray"),
        ncol = 3,bty = "n")
 dev.off()
 
+## plot thawdepth vs latitude for boreal
 
+# create vector of unburned data
+bu <- which(bs.td$burn_unburn == "unburned")
+
+png("latitudinal_thaw_boreal.png",
+    width = 8,
+    height = 6, 
+    units="in", 
+    res = 300)
+par(las = 1, cex = 1.5)
+
+plot(bs.td$lat[bu], -bs.td$thaw_depth[bu],
+     ylim = c(-240,0),
+     bg = cl[bu],
+     pch = ifelse(bs.td$thaw_active[bu] == "A",21,24),
+     xlab = "Latitude",
+     ylab = "Permafrost Table Depth (cm)",
+     main = "Unburned Thaw Depth by Boreal Region")
+
+legend("bottomright", c("ALT","TD"),
+       bty = "n",inset = 0.05,
+       pch = c(16,17))
+
+legend("bottom", c("CA","RU","US"),
+       fill = c("black","red","gray"),
+       ncol = 3,bty = "n")
+dev.off()
 
 
 # make a map of the study sites
