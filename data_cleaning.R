@@ -347,8 +347,8 @@ legend("topright", c("ALT","TD"),
 
 dev.off()
 
-## plot thaw depth vs. latitude
-png("latitudinal_thaw.png",
+## plot thaw depth vs. latitude by biome
+png("latitudinal_thaw_biome.png",
     width = 8,
     height = 6, 
     units="in", 
@@ -359,14 +359,38 @@ plot(site.td$lat, -site.td$thaw_depth,
      ylim = c(-200,0),
      bg = ifelse(site.td$boreal_tundra =="boreal","blue","yellow"),
      pch = ifelse(site.td$thaw_active == "A",21,24),
-     xlab = "Years Since Fire",
+     xlab = "Latitude",
      ylab = "Permafrost Table Depth (cm)",
-     main = "Post-fire Thaw Depth by Biome")
+     main = "Thaw Depth by Latitude and Biome")
 
-legend("topright", c("ALT","TD"),
+legend("bottomright", c("ALT","TD"),
        bty = "n",inset = 0.05,
        pch = c(16,17))
 
+dev.off()
+
+## plot thaw depth vs. latitude by burn
+png("latitudinal_thaw_burn.png",
+    width = 8,
+    height = 6, 
+    units="in", 
+    res = 300)
+par(las = 1, cex = 1.5)
+
+plot(site.td$lat, -site.td$thaw_depth,
+     ylim = c(-240,0),
+     bg = ifelse(site.td$burn_unburn =="burned","red","black"),
+     pch = ifelse(site.td$thaw_active == "A",21,24),
+     xlab = "Latitude",
+     ylab = "Permafrost Table Depth (cm)",
+     main = "Thaw Depth by Latitude and Burn Status")
+
+legend("bottomright", c("ALT","TD"),
+       bty = "n",inset = 0.05,
+       pch = c(16,17))
+legend("bottom", c("Unburned","Burned"),
+       fill = c("black","red"),
+       ncol = 2,bty = "n")
 dev.off()
 
 ## plot thaw depth vs. time since fire for boreal
