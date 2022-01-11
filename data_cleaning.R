@@ -276,8 +276,8 @@ bs.td <- site.td[which(site.td$boreal_tundra=="boreal"),]
 
 aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn, all.td2, FUN = mean)
 aggregate(cbind(thaw_depth,tsf)~boreal_tundra+burn_unburn+thaw_active, all.td2, FUN = mean)
-
-
+aggregate(cbind(thaw_depth,tsf)~burn_unburn+country_code, bs.td, FUN = mean)
+aggregate(cbind(thaw_depth,tsf)~burn_unburn+country_code+thaw_active, bs.td, FUN = mean)
 
 ## boxplot of all data, grouped by biome and burned/unburned
 png("biome_thaw_all.png",
@@ -285,7 +285,7 @@ png("biome_thaw_all.png",
     height = 8, 
     units="in", 
     res = 300)
-par(las = 1, cex = 1.75)
+par(las = 1, cex = 1.5)
 boxplot(-thaw_depth~burn_unburn+boreal_tundra, data = all.td2, range = 1,
         outline = T,
         ylim = c(-200,0), 
@@ -300,13 +300,13 @@ png("biome_thaw_site.png",
     height = 8, 
     units="in", 
     res = 300)
-par(las = 1, cex = 1.75)
+par(las = 1, cex = 1.5)
 boxplot(-thaw_depth~burn_unburn+boreal_tundra, data = site.td, range = 1,
         outline = T, notch = T,
         ylim = c(-200,0), 
         xlab="",ylab = "Permafrost Table Depth (cm)",
         col = rep(c("blue","yellow"), each=2), angle = c(90,0),
-        names = c("Boreal burned", "Boreal unburned", "Tundra burned", "Tundra unburned"))
+        names = c("Burned", "Unburned", "Burned", "Unburned"))
 dev.off()
 
 ## thaw probe measurements by region for boreal only
@@ -344,6 +344,9 @@ plot(site.td$tsf, -site.td$thaw_depth,
 legend("topright", c("ALT","TD"),
        bty = "n",inset = 0.05,
        pch = c(16,17))
+
+legend(10,-150, c("Boreal", "Tundra"),
+       fill = c("Blue","Yellow"),bty = "n")
 
 dev.off()
 
